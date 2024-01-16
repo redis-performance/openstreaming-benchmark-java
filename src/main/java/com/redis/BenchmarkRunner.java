@@ -2,6 +2,7 @@ package com.redis;
 
 import com.google.common.util.concurrent.RateLimiter;
 import org.HdrHistogram.ConcurrentHistogram;
+import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -16,7 +17,7 @@ public class BenchmarkRunner implements Runnable {
 
     @Option(names = {"-a", "--password"},
             description = "Redis password.")
-    private String password = null;
+    private final String password = null;
 
     @Option(names = {"-s", "--server"},
             description = "Server hostname.", defaultValue = "localhost")
@@ -88,9 +89,12 @@ public class BenchmarkRunner implements Runnable {
     public void run() {
         int requestsPerClient = numberRequests / clients;
         int rpsPerClient = rps / clients;
+        int totalAccRps = 0;
 
         Random random = new Random();
         random.setSeed(seed);
+        ZipfDistribution zipfDistribution = new ZipfDistribution(rps, 1);
+
 
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
 
@@ -111,7 +115,15 @@ public class BenchmarkRunner implements Runnable {
                 ProducerThread clientThread;
                 JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
                 if (rps > 0) {
-                    RateLimiter rateLimiter = RateLimiter.create(rpsPerClient);
+                    int clientRps = zipfDistribution.sample();
+                    if (clientRps < 1 || totalAccRps >= rps) {
+                        clientRps = 1;
+                    }
+                    totalAccRps += clientRps;
+                    RateLimiter rateLimiter = RateLimiter.create(clientRps);
+                    if (verbose) {
+                        System.out.println("Client #" + i + " rps: " + clientRps);
+                    }
                     clientThread = new ProducerThread(uredis, requestsPerClient, dataSize, topicName, retentionTimeSecs, maxStreamLength, histogram, verbose, rateLimiter);
                 } else {
                     clientThread = new ProducerThread(uredis, requestsPerClient, dataSize, topicName, retentionTimeSecs, maxStreamLength, histogram, verbose);
