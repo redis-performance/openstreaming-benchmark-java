@@ -17,7 +17,7 @@ public class BenchmarkRunner implements Runnable {
 
     @Option(names = {"-a", "--password"},
             description = "Redis password.")
-    private String password = null;
+    private final String password = null;
 
     @Option(names = {"-s", "--server"},
             description = "Server hostname.", defaultValue = "localhost")
