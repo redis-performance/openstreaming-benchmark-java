@@ -2,7 +2,7 @@ package com.redis;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.redis.streams.AckMessage;
-import com.redis.streams.StreamMessage;
+import com.redis.streams.TopicEntry;
 import com.redis.streams.command.serial.ConsumerGroup;
 import com.redis.streams.exception.TopicNotFoundException;
 import org.HdrHistogram.ConcurrentHistogram;
@@ -59,7 +59,7 @@ public class ConsumerThread extends Thread {
                 rateLimiter.acquire(1);
             }
             long startTime = System.nanoTime();
-            StreamMessage consumedMessage = null;
+            TopicEntry consumedMessage = null;
             try {
                 //consume a message from the topic:
                 consumedMessage = consumer.consume(consumerName);
@@ -70,12 +70,12 @@ public class ConsumerThread extends Thread {
             }
             // we only consider an operation if a message was consumed
             if (consumedMessage != null) {
-                AckMessage ack = new AckMessage(consumedMessage.getStreamName(), consumedMessage.getGroupName(), consumedMessage.getEntry().getID());
+                AckMessage ack = new AckMessage(consumedMessage.getStreamName(), consumedMessage.getGroupName(), consumedMessage.getId().getStreamEntryId());
                 boolean success = consumer.acknowledge(ack);
                 long durationMicros = (System.nanoTime() - startTime) / 1000;
                 histogram.recordValue(durationMicros);
                 if (this.verbose) {
-                    System.out.println("Consumed message id with: " + consumedMessage.getEntry().getID());
+                    System.out.println("Consumed message id with: " + consumedMessage.getId().getStreamEntryId());
                 }
             }
 
