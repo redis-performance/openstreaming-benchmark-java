@@ -61,7 +61,7 @@ public class BenchmarkRunner implements Runnable {
 
     @Option(names = {"-n", "--number-requests"},
             description = "Number of requests.", defaultValue = "1000000")
-    private Integer numberRequests;
+    private Long numberRequests;
     @Option(names = {"--seed"},
             description = "Random seed", defaultValue = "12345")
     private Integer seed;
@@ -87,7 +87,7 @@ public class BenchmarkRunner implements Runnable {
     }
 
     public void run() {
-        int requestsPerClient = numberRequests / clients;
+        long requestsPerClient = numberRequests / clients;
         int rpsPerClient = rps / clients;
         int totalAccRps = 0;
 

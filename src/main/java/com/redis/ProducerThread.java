@@ -15,7 +15,7 @@ import redis.clients.jedis.JedisPooled;
 import java.util.Map;
 
 public class ProducerThread extends Thread {
-    private final int requests;
+    private final long requests;
     private final JedisPooled rg;
     private final String topicName;
     private final Histogram histogram;
@@ -26,7 +26,7 @@ public class ProducerThread extends Thread {
     private final int datasize;
 
 
-    ProducerThread(JedisPooled rg, Integer requests, Integer datasize, String topicName, long maxStreamLength, long retentionTimeSeconds, ConcurrentHistogram histogram, boolean verbose) {
+    ProducerThread(JedisPooled rg, long requests, Integer datasize, String topicName, long maxStreamLength, long retentionTimeSeconds, ConcurrentHistogram histogram, boolean verbose) {
         super("Client thread");
         this.requests = requests;
         this.datasize = datasize;
@@ -47,7 +47,7 @@ public class ProducerThread extends Thread {
         );
     }
 
-    ProducerThread(JedisPooled rg, Integer requests, Integer datasize, String topicName, long maxStreamLength, long retentionTimeSeconds, ConcurrentHistogram histogram, boolean verbose, RateLimiter perClientRateLimiter) {
+    ProducerThread(JedisPooled rg, long requests, Integer datasize, String topicName, long maxStreamLength, long retentionTimeSeconds, ConcurrentHistogram histogram, boolean verbose, RateLimiter perClientRateLimiter) {
         super("Client thread");
         this.requests = requests;
         this.datasize = datasize;
@@ -89,7 +89,7 @@ public class ProducerThread extends Thread {
             System.out.println("Created producer for topic: " + producer.getTopicName());
         }
         TopicEntryId id = null;
-        for (int i = 0; i < requests; i++) {
+        for (long i = 0; i < requests; i++) {
             if (rateLimiter != null) {
                 // blocks the executing thread until a permit is available.
                 rateLimiter.acquire(1);

@@ -11,7 +11,7 @@ import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.StreamEntryID;
 
 public class ConsumerThread extends Thread {
-    private final int requests;
+    private final long requests;
     private final JedisPooled rg;
     private final String topicName;
     private final String consumerGroupName;
@@ -21,7 +21,7 @@ public class ConsumerThread extends Thread {
     private final boolean verbose;
 
 
-    ConsumerThread(JedisPooled rg, Integer requests, String topicName, String consumerGroupName, String consumerName, ConcurrentHistogram histogram, boolean verbose) {
+    ConsumerThread(JedisPooled rg, Long requests, String topicName, String consumerGroupName, String consumerName, ConcurrentHistogram histogram, boolean verbose) {
         super("Client thread");
         this.requests = requests;
         this.rg = rg;
@@ -34,7 +34,7 @@ public class ConsumerThread extends Thread {
 
     }
 
-    ConsumerThread(JedisPooled rg, Integer requests, String topicName, String consumerGroupName, String consumerName, ConcurrentHistogram histogram, boolean verbose, RateLimiter perClientRateLimiter) {
+    ConsumerThread(JedisPooled rg, Long requests, String topicName, String consumerGroupName, String consumerName, ConcurrentHistogram histogram, boolean verbose, RateLimiter perClientRateLimiter) {
         super("Client thread");
         this.requests = requests;
         this.rg = rg;
@@ -53,7 +53,7 @@ public class ConsumerThread extends Thread {
             System.out.println("Created consumer for topic '" + topicName + "' and group '" + consumerGroupName + "'.\n");
         }
         StreamEntryID id = null;
-        for (int i = 0; i < requests; i++) {
+        for (long i = 0; i < requests; i++) {
             if (rateLimiter != null) {
                 // blocks the executing thread until a permit is available.
                 rateLimiter.acquire(1);
