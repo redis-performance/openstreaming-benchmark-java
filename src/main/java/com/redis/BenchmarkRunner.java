@@ -30,6 +30,10 @@ public class BenchmarkRunner implements Runnable {
             description = "Number of clients.", defaultValue = "50")
     private Integer clients;
 
+    @Option(names = {"-c", "--topic-start"},
+            description = "Topic start number.", defaultValue = "0")
+    private Integer topicStart;
+
     @Option(names = {"--consumers-per-stream-max"},
             description = "Consumers per stream.", defaultValue = "50")
     private Integer consumersPerStreamMax;
@@ -110,7 +114,7 @@ public class BenchmarkRunner implements Runnable {
         long previousTime = startTime;
         if (mode.equals("producer")) {
             System.out.println("Starting benchmark in producer mode...");
-            for (int i = 0; i < clients; i++) {
+            for (int i = topicStart; i < (clients + topicStart); i++) {
                 String topicName = String.format("topic-%d", i);
                 ProducerThread clientThread;
                 JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
