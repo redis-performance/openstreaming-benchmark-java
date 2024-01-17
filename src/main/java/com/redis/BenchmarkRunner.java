@@ -83,6 +83,9 @@ public class BenchmarkRunner implements Runnable {
     @Option(names = "--verbose")
     private boolean verbose;
 
+    @Option(names = "--zipfian")
+    private boolean zipfian;
+
     public static void main(String[] args) {
         // By implementing Runnable or Callable, parsing, error handling and handling user
         // requests for usage help or version help can be done with one line of code.
@@ -119,11 +122,14 @@ public class BenchmarkRunner implements Runnable {
                 ProducerThread clientThread;
                 JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
                 if (rps > 0) {
-                    int clientRps = zipfDistribution.sample();
-                    if (clientRps < 1 || totalAccRps >= rps) {
-                        clientRps = 1;
+                    int clientRps = rpsPerClient;
+                    if (zipfian){
+                        clientRps = zipfDistribution.sample();
+                        if (clientRps < 1 || totalAccRps >= rps) {
+                            clientRps = 1;
+                        }
+                        totalAccRps += clientRps;
                     }
-                    totalAccRps += clientRps;
                     RateLimiter rateLimiter = RateLimiter.create(clientRps);
                     if (verbose) {
                         System.out.println("Client #" + i + " rps: " + clientRps);

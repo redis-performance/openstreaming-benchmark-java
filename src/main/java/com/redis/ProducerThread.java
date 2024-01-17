@@ -106,6 +106,10 @@ public class ProducerThread extends Thread {
                 System.out.println(">>producer FAILED to write a message<<");
                 e.printStackTrace();
 //                throw new RuntimeException(e);
+            } catch (com.redis.streams.exception.RedisStreamsException e) {
+                System.out.println(">>producer FAILED to write a message<<");
+                e.printStackTrace();
+//                throw new RuntimeException(e);
             }
             long durationMicros = (System.nanoTime() - startTime) / 1000;
             histogram.recordValue(durationMicros);
