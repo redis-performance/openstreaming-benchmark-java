@@ -66,7 +66,7 @@ public class ConsumerThread extends Thread {
             } catch (TopicNotFoundException e) {
                 System.out.println(">>consumer FAILED to consume a message<<");
                 e.printStackTrace();
-//                throw new RuntimeException(e);
+                throw new RuntimeException(e);
             }
             // we only consider an operation if a message was consumed
             if (consumedMessage != null) {
