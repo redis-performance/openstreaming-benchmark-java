@@ -30,7 +30,7 @@ public class BenchmarkRunner implements Runnable {
             description = "Number of clients.", defaultValue = "50")
     private Integer clients;
 
-    @Option(names = {"-c", "--topic-start"},
+    @Option(names = { "--topic-start"},
             description = "Topic start number.", defaultValue = "0")
     private Integer topicStart;
 
