@@ -145,7 +145,7 @@ public class BenchmarkRunner implements Runnable {
             System.out.println("Finished setting up benchmark in producer mode...");
         } else {
             System.out.println("Starting benchmark in consumer mode...");
-            for (int i = 0; i < clients; i++) {
+            for (int i = topicStart; i < (clients + topicStart); i++) {
                 String topicName = String.format("topic-%d", i);
                 String consumerGroupName = String.format("consumer-group-%d:topic-%d", 1, i);
                 int consumersForThisTopic = random.nextInt(consumersPerStreamMin, consumersPerStreamMax + 1);
