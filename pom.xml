@@ -25,12 +25,12 @@
         <dependency>
             <groupId>com.redis.streams</groupId>
             <artifactId>redis-streams-java</artifactId>
-            <version>0.2.0</version>
+            <version>0.2.1-SNAPSHOT</version>
             <type>jar</type>
             <scope>compile</scope>
 
             <!--            <scope>system</scope>-->
-            <!--            <systemPath>${project.basedir}/redis-streams-java-0.1.2.jar</systemPath>-->
+            <!--            <systemPath>${project.basedir}/redis-streams-java-0.2.1-SNAPSHOT.jar</systemPath>-->
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-text -->
         <dependency>
@@ -84,7 +84,7 @@
     declared dependencies you should execute the following command from
     the directory holding this pom.xml file:
 
-    mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=redis-streams-java-0.1.2.jar
+    mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=redis-streams-java-0.2.1-SNAPSHOT.jar
 -->
     <build>
         <plugins>
