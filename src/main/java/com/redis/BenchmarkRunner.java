@@ -34,6 +34,11 @@ public class BenchmarkRunner implements Runnable {
             description = "Topic start number.", defaultValue = "0")
     private Integer topicStart;
 
+
+    @Option(names = { "--producers-per-topic"},
+            description = "Producers per topic.", defaultValue = "1")
+    private Integer producersPerTopic;
+
     @Option(names = {"--consumers-per-stream-max"},
             description = "Consumers per stream.", defaultValue = "50")
     private Integer consumersPerStreamMax;
@@ -95,8 +100,8 @@ public class BenchmarkRunner implements Runnable {
 
     public void run() {
         long requestsPerClient = numberRequests / clients;
-        int rpsPerClient = rps / clients;
-        int totalAccRps = 0;
+        double rpsPerClient = (double) rps / (double)(clients*producersPerTopic);
+        double totalAccRps = 0;
 
         Random random = new Random();
         random.setSeed(seed);
@@ -119,28 +124,30 @@ public class BenchmarkRunner implements Runnable {
             System.out.println("Starting benchmark in producer mode...");
             for (int i = topicStart; i < (clients + topicStart); i++) {
                 String topicName = String.format("topic-%d", i);
-                ProducerThread clientThread;
-                JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
-                if (rps > 0) {
-                    int clientRps = rpsPerClient;
-                    if (zipfian){
-                        clientRps = zipfDistribution.sample();
-                        if (clientRps < 1 || totalAccRps >= rps) {
-                            clientRps = 1;
+                for (int topicProducerId = 0; topicProducerId < producersPerTopic; topicProducerId++) {
+                    ProducerThread clientThread;
+                    JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
+                    if (rps > 0) {
+                        double clientRps = rpsPerClient;
+                        if (zipfian){
+                            clientRps = zipfDistribution.sample();
+                            if (clientRps < 1 || totalAccRps >= rps) {
+                                clientRps = 1;
+                            }
+                            totalAccRps += clientRps;
                         }
-                        totalAccRps += clientRps;
+                        RateLimiter rateLimiter = RateLimiter.create(clientRps);
+                        if (verbose) {
+                            System.out.println("Client #" + i + " rps: " + clientRps);
+                        }
+                        clientThread = new ProducerThread(uredis, requestsPerClient, dataSize, topicName, retentionTimeSecs, maxStreamLength, histogram, verbose, rateLimiter);
+                    } else {
+                        clientThread = new ProducerThread(uredis, requestsPerClient, dataSize, topicName, retentionTimeSecs, maxStreamLength, histogram, verbose);
                     }
-                    RateLimiter rateLimiter = RateLimiter.create(clientRps);
-                    if (verbose) {
-                        System.out.println("Client #" + i + " rps: " + clientRps);
-                    }
-                    clientThread = new ProducerThread(uredis, requestsPerClient, dataSize, topicName, retentionTimeSecs, maxStreamLength, histogram, verbose, rateLimiter);
-                } else {
-                    clientThread = new ProducerThread(uredis, requestsPerClient, dataSize, topicName, retentionTimeSecs, maxStreamLength, histogram, verbose);
+                    clientThread.start();
+                    threadsArray.add(clientThread);
+                    aliveClients++;
                 }
-                clientThread.start();
-                threadsArray.add(clientThread);
-                aliveClients++;
             }
             System.out.println("Finished setting up benchmark in producer mode...");
         } else {
