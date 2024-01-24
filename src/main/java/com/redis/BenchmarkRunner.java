@@ -105,8 +105,10 @@ public class BenchmarkRunner implements Runnable {
 
         Random random = new Random();
         random.setSeed(seed);
-        ZipfDistribution zipfDistribution = new ZipfDistribution(rps, 1);
-
+        ZipfDistribution zipfDistribution = null;
+        if (rps > 0) {
+            zipfDistribution = new ZipfDistribution(rps, 1);
+        }
 
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
 
