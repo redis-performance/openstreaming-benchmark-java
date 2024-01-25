@@ -181,12 +181,13 @@ public class BenchmarkRunner implements Runnable {
             long currentTotalCount = histogram.getTotalCount();
             long currentTime = System.currentTimeMillis();
             double currentp50onClient = histogram.getValueAtPercentile(50.0) / 1000.0f;
+            double currentp99onClient = histogram.getValueAtPercentile(99.0) / 1000.0f;
             double elapsedSecs = (currentTime - startTime) * 1000.0f;
             double elapsedSincePreviousSecs = (currentTime - previousTime) / 1000.0f;
             long countSincePreviousSecs = currentTotalCount - previousRequestCount;
 
             double currentRps = countSincePreviousSecs / elapsedSincePreviousSecs;
-            System.out.format("Current RPS: %.3f commands/sec; Total requests %d ; Client p50 with RTT(ms): %.3f\n", currentRps, currentTotalCount, currentp50onClient);
+            System.out.format("Current: %.2f rps; Total requests %d ; Client p50 (ms): %.3f p99 (ms): %.3f\n", currentRps, currentTotalCount, currentp50onClient, currentp99onClient);
             previousRequestCount = currentTotalCount;
             previousTime = currentTime;
             for (ProducerThread ct : threadsArray
