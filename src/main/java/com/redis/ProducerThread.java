@@ -113,15 +113,18 @@ public class ProducerThread extends Thread {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             } catch (com.redis.streams.exception.RedisStreamsException e) {
-                System.out.println(">>producer FAILED to write a message<<");
-                e.printStackTrace();
-                throw new RuntimeException(e);
+                if (this.verbose) {
+                    System.out.println(">>producer FAILED to write a message<<"+e.toString());
+                    // In this case we don't account as a published message and will retry
+                }
+            } finally {
+                long durationMicros = (System.nanoTime() - startTime) / 1000;
+                histogram.recordValue(durationMicros);
+                if (this.verbose) {
+                    System.out.println("Published message id with: " + id.toString());
+                }
             }
-            long durationMicros = (System.nanoTime() - startTime) / 1000;
-            histogram.recordValue(durationMicros);
-            if (this.verbose) {
-                System.out.println("Published message id with: " + id.toString());
-            }
+
         }
     }
 }
