@@ -6,6 +6,7 @@ import com.redis.streams.command.serial.SerialTopicConfig;
 import com.redis.streams.command.serial.TopicManager;
 import com.redis.streams.command.serial.TopicProducer;
 import com.redis.streams.exception.InvalidMessageException;
+import com.redis.streams.exception.InvalidTopicException;
 import com.redis.streams.exception.TopicNotFoundException;
 import org.HdrHistogram.ConcurrentHistogram;
 import org.HdrHistogram.Histogram;
@@ -79,7 +80,12 @@ public class ProducerThread extends Thread {
         if (this.verbose) {
             System.out.println("BEGIN TEST (RESPONSE TO PING) -->   " + this.rg.ping());
         }
-        TopicManager manager = TopicManager.createTopic(this.rg, this.topicConfig);
+        TopicManager manager = null;
+        try {
+            manager = TopicManager.createTopic(this.rg, this.topicConfig);
+        } catch (InvalidTopicException e) {
+            throw new RuntimeException(e);
+        }
         if (this.verbose) {
             System.out.println("Created topic with config: " + manager.getConfig());
         }

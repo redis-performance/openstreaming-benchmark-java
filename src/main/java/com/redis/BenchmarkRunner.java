@@ -39,6 +39,10 @@ public class BenchmarkRunner implements Runnable {
             description = "Producers per topic.", defaultValue = "1")
     private Integer producersPerTopic;
 
+    @Option(names = {"--consumer-groups-per-topic"},
+            description = "Consumers Groups per topic.", defaultValue = "1")
+    private Integer consumerGroupsPerTopic;
+
     @Option(names = {"--consumers-per-stream-max"},
             description = "Consumers per stream.", defaultValue = "50")
     private Integer consumersPerStreamMax;
@@ -156,21 +160,23 @@ public class BenchmarkRunner implements Runnable {
             System.out.println("Starting benchmark in consumer mode...");
             for (int i = topicStart; i < (clients + topicStart); i++) {
                 String topicName = String.format("topic-%d", i);
-                String consumerGroupName = String.format("consumer-group-%d:topic-%d", 1, i);
-                int consumersForThisTopic = random.nextInt(consumersPerStreamMin, consumersPerStreamMax + 1);
-                for (int groupConsumerId = 0; groupConsumerId < consumersForThisTopic; groupConsumerId++) {
-                    String consumerName = "";
-                    ConsumerThread clientThread;
-                    JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
-                    if (rps > 0) {
-                        RateLimiter rateLimiter = RateLimiter.create(rpsPerClient);
-                        clientThread = new ConsumerThread(uredis, requestsPerClient, topicName, consumerGroupName, consumerName, histogram, verbose, rateLimiter);
-                    } else {
-                        clientThread = new ConsumerThread(uredis, requestsPerClient, topicName, consumerGroupName, consumerName, histogram, verbose);
+                for (int groupId = 0; groupId < consumerGroupsPerTopic; groupId++) {
+                    String consumerGroupName = String.format("consumer-group-%d:topic-%d", groupId, i);
+                    int consumersForThisTopic = random.nextInt(consumersPerStreamMin, consumersPerStreamMax + 1);
+                    for (int groupConsumerId = 0; groupConsumerId < consumersForThisTopic; groupConsumerId++) {
+                        String consumerName = "";
+                        ConsumerThread clientThread;
+                        JedisPooled uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
+                        if (rps > 0) {
+                            RateLimiter rateLimiter = RateLimiter.create(rpsPerClient);
+                            clientThread = new ConsumerThread(uredis, requestsPerClient, topicName, consumerGroupName, consumerName, histogram, verbose, rateLimiter);
+                        } else {
+                            clientThread = new ConsumerThread(uredis, requestsPerClient, topicName, consumerGroupName, consumerName, histogram, verbose);
+                        }
+                        clientThread.start();
+                        cthreadsArray.add(clientThread);
+                        aliveClients++;
                     }
-                    clientThread.start();
-                    cthreadsArray.add(clientThread);
-                    aliveClients++;
                 }
             }
             System.out.println("Finished setting up benchmark in consumer mode...");
