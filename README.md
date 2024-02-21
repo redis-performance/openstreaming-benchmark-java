@@ -11,7 +11,7 @@ the directory holding this pom.xml file:
 
 
 ```bash
-mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=redis-streams-java-0.1.2.jar
+mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=redis-streams-java-0.3.0.jar
 mvn package
 
 java -jar target/openstreaming-benchmark-java-1.0-SNAPSHOT-jar-with-dependencies.jar --help
