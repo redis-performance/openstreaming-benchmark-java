@@ -1,6 +1,7 @@
 package com.redis;
 
 import com.google.common.util.concurrent.RateLimiter;
+import me.tongfei.progressbar.ProgressBar;
 import org.HdrHistogram.ConcurrentHistogram;
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -103,7 +104,6 @@ public class BenchmarkRunner implements Runnable {
     }
 
     public void run() {
-        long requestsPerClient = numberRequests / clients;
         double rpsPerClient = (double) rps / (double)(clients*producersPerTopic);
         double totalAccRps = 0;
 
@@ -118,16 +118,20 @@ public class BenchmarkRunner implements Runnable {
 
         ArrayList<ProducerThread> threadsArray = new ArrayList<ProducerThread>();
         ArrayList<ConsumerThread> cthreadsArray = new ArrayList<ConsumerThread>();
-        System.out.println("Starting benchmark with " + clients + " threads. Requests per thread " + requestsPerClient);
         int aliveClients = 0;
         GenericObjectPoolConfig<Connection> poolConfig = new GenericObjectPoolConfig<>();
         poolConfig.setMaxTotal(clients);
         poolConfig.setMaxIdle(clients);
         long previousRequestCount = 0;
         long startTime = System.currentTimeMillis();
+
         long previousTime = startTime;
         if (mode.equals("producer")) {
+            long totalProducers = producersPerTopic * clients;
+            long requestsPerClient = numberRequests / totalProducers;
+            System.out.println("Starting benchmark with " + totalProducers + " threads. Requests per thread " + requestsPerClient);
             System.out.println("Starting benchmark in producer mode...");
+            ProgressBar pb = new ProgressBar("Producers", totalProducers);
             for (int i = topicStart; i < (clients + topicStart); i++) {
                 String topicName = String.format("topic-%d", i);
                 for (int topicProducerId = 0; topicProducerId < producersPerTopic; topicProducerId++) {
@@ -152,17 +156,24 @@ public class BenchmarkRunner implements Runnable {
                     }
                     clientThread.start();
                     threadsArray.add(clientThread);
+                    pb.step();
                     aliveClients++;
                 }
             }
+            pb.close();
             System.out.println("Finished setting up benchmark in producer mode...");
         } else {
             System.out.println("Starting benchmark in consumer mode...");
+            long totalConsumers = consumersPerStreamMax * consumerGroupsPerTopic * clients;
+            ProgressBar pb = new ProgressBar("Consumers", totalConsumers);
+            long requestsPerClient = numberRequests / clients;
+
             for (int i = topicStart; i < (clients + topicStart); i++) {
                 String topicName = String.format("topic-%d", i);
                 for (int groupId = 0; groupId < consumerGroupsPerTopic; groupId++) {
                     String consumerGroupName = String.format("consumer-group-%d:topic-%d", groupId, i);
                     int consumersForThisTopic = random.nextInt(consumersPerStreamMin, consumersPerStreamMax + 1);
+
                     for (int groupConsumerId = 0; groupConsumerId < consumersForThisTopic; groupConsumerId++) {
                         String consumerName = "";
                         ConsumerThread clientThread;
@@ -176,15 +187,16 @@ public class BenchmarkRunner implements Runnable {
                         clientThread.start();
                         cthreadsArray.add(clientThread);
                         aliveClients++;
+                        pb.step();
                     }
                 }
             }
             System.out.println("Finished setting up benchmark in consumer mode...");
         }
         System.out.println("There is a total of " + aliveClients + " active connections...");
-
-        while (aliveClients > 0) {
-            long currentTotalCount = histogram.getTotalCount();
+        long currentTotalCount = histogram.getTotalCount();
+        while (aliveClients > 0 && currentTotalCount < numberRequests) {
+            currentTotalCount = histogram.getTotalCount();
             long currentTime = System.currentTimeMillis();
             double currentp50onClient = histogram.getValueAtPercentile(50.0) / 1000.0f;
             double currentp99onClient = histogram.getValueAtPercentile(99.0) / 1000.0f;
@@ -193,7 +205,8 @@ public class BenchmarkRunner implements Runnable {
             long countSincePreviousSecs = currentTotalCount - previousRequestCount;
 
             double currentRps = countSincePreviousSecs / elapsedSincePreviousSecs;
-            System.out.format("Current: %.2f rps; Total requests %d ; Client p50 (ms): %.3f p99 (ms): %.3f\n", currentRps, currentTotalCount, currentp50onClient, currentp99onClient);
+            double currentPct = (double)currentTotalCount / (double)numberRequests * 100.0;
+            System.out.format("Pct: %.1f%% ; Clients: %d; Current: %.2f rps; Total requests %d ; Client p50 (ms): %.3f p99 (ms): %.3f\n",currentPct, aliveClients, currentRps, currentTotalCount, currentp50onClient, currentp99onClient);
             previousRequestCount = currentTotalCount;
             previousTime = currentTime;
             for (ProducerThread ct : threadsArray
@@ -226,5 +239,17 @@ public class BenchmarkRunner implements Runnable {
         System.out.println("p50 (ms):" + histogram.getValueAtPercentile(50.0) / 1000.0f);
         System.out.println("p95 (ms):" + histogram.getValueAtPercentile(95.0) / 1000.0f);
         System.out.println("p99 (ms):" + histogram.getValueAtPercentile(99.0) / 1000.0f);
+        for (ConsumerThread ct : cthreadsArray
+        ) {
+            if (ct.isAlive()) {
+                ct.stop();
+            }
+        }
+        for (ProducerThread ct : threadsArray
+        ) {
+            if (ct.isAlive()) {
+                ct.stop();
+            }
+        }
     }
 }
